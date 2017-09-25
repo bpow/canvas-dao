@@ -76,51 +76,28 @@ public class LocatedVariantFactory {
 
             oneBasedStart = oneBasedStart + prefixLength;
 
-            if (ref.length() == 1 && alt.length() == 1) {
+            if (ref.length() == 1 && alt.length() == 1) { // SNP (or ref...)
 
                 locatedVariant = createSNP(genomeRef, genomeRefSeq, snp, ref, alt, oneBasedStart);
 
-            } else if (ref.length() > alt.length()) {
-
-                if (alt.length() == 0) {
-                    locatedVariant.setVariantType(del);
-                    locatedVariant.setPosition(oneBasedStart);
-                    // FIXME - check that this is right for end position
-                    locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
-                    locatedVariant.setRef(ref);
-                    locatedVariant.setSeq(ref);
-                } else {
-                    locatedVariant.setVariantType(sub);
-                    locatedVariant.setPosition(oneBasedStart - 1);
-                    locatedVariant.setRef(ref);
-                    locatedVariant.setSeq(alt);
-                    locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
-                }
-
-            } else if (ref.length() < alt.length()) {
-
-                if (ref.length() == 0) {
-                    locatedVariant.setVariantType(ins);
-                    locatedVariant.setPosition(oneBasedStart-1);
-                    locatedVariant.setEndPosition(locatedVariant.getPosition() + 1);
-                    locatedVariant.setRef("");
-                    locatedVariant.setSeq(alt);
-                } else {
-                    locatedVariant.setVariantType(sub);
-                    locatedVariant.setPosition(oneBasedStart-1);
-                    locatedVariant.setRef(ref);
-                    locatedVariant.setSeq(alt);
-                    locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
-                }
-
-            } else if (ref.length() == alt.length()) {
-
+            } else if (alt.length() == 0) { // deletion
+                locatedVariant.setVariantType(del);
+                locatedVariant.setPosition(oneBasedStart);
+                locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
+                locatedVariant.setRef(ref);
+                locatedVariant.setSeq(ref);
+            } else if (ref.length() == 0) { // insertion
+                locatedVariant.setVariantType(ins);
+                locatedVariant.setPosition(oneBasedStart-1);
+                locatedVariant.setEndPosition(locatedVariant.getPosition() + 1);
+                locatedVariant.setRef("");
+                locatedVariant.setSeq(alt);
+            } else if (ref.length() == alt.length()) { // sub (delins)
                 locatedVariant.setVariantType(sub);
                 locatedVariant.setPosition((oneBasedStart-1));
                 locatedVariant.setRef(ref);
                 locatedVariant.setSeq(alt);
                 locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
-
             }
 
         } catch (Exception e) {

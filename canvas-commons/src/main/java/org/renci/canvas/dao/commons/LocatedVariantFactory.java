@@ -77,9 +77,11 @@ public class LocatedVariantFactory {
             oneBasedStart = oneBasedStart + prefixLength;
 
             if (ref.length() == 1 && alt.length() == 1) { // SNP (or ref...)
-
-                locatedVariant = createSNP(genomeRef, genomeRefSeq, snp, ref, alt, oneBasedStart);
-
+                locatedVariant.setVariantType(snp);
+                locatedVariant.setPosition(oneBasedStart);
+                locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
+                locatedVariant.setRef(ref);
+                locatedVariant.setSeq(alt);
             } else if (alt.length() == 0) { // deletion
                 locatedVariant.setVariantType(del);
                 locatedVariant.setPosition(oneBasedStart);
@@ -90,7 +92,7 @@ public class LocatedVariantFactory {
                 locatedVariant.setVariantType(ins);
                 locatedVariant.setPosition(oneBasedStart-1);
                 locatedVariant.setEndPosition(locatedVariant.getPosition() + 1);
-                locatedVariant.setRef("");
+                locatedVariant.setRef(ref);
                 locatedVariant.setSeq(alt);
             } else if (ref.length() == alt.length()) { // sub (delins)
                 locatedVariant.setVariantType(sub);

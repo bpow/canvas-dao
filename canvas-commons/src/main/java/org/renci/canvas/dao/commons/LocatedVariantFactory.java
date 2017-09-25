@@ -21,8 +21,16 @@ public class LocatedVariantFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(LocatedVariantFactory.class);
 
-    public static LocatedVariant create(GenomeRef genomeRef, GenomeRefSeq genomeRefSeq, VariantContext variantContext, Allele altAllele,
-            List<VariantType> allVariantTypes) {
+    public static LocatedVariant create(GenomeRef genomeRef, GenomeRefSeq genomeRefSeq,
+                                        VariantContext variantContext, Allele altAllele,
+                                        List<VariantType> allVariantTypes) {
+        return create(genomeRef, genomeRefSeq, variantContext.getReference().getDisplayString(),
+                altAllele.getDisplayString(), variantContext.getStart(), allVariantTypes);
+    }
+
+    public static LocatedVariant create(GenomeRef genomeRef, GenomeRefSeq genomeRefSeq,
+                                        String ref, String alt, int oneBasedStart,
+                                        List<VariantType> allVariantTypes) {
 
         LocatedVariant locatedVariant = new LocatedVariant(genomeRef, genomeRefSeq);
 
@@ -32,9 +40,6 @@ public class LocatedVariantFactory {
         VariantType sub = allVariantTypes.stream().filter(a -> a.getId().equals("sub")).findAny().get();
 
         try {
-
-            String ref = variantContext.getReference().getDisplayString();
-            String alt = altAllele.getDisplayString();
 
             if (StringUtils.isEmpty(ref)) {
                 logger.error("ref is empty");
@@ -182,21 +187,21 @@ public class LocatedVariantFactory {
             if (ref.length() == 1 && alt.length() == 1) {
 
                 locatedVariant = createSNP(genomeRef, genomeRefSeq, snp, ref, alt,
-                        variantContext.getStart() + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                        oneBasedStart + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
 
             } else if (ref.length() > alt.length()) {
 
                 if (alt.length() == 0) {
                     locatedVariant.setVariantType(del);
                     locatedVariant
-                            .setPosition(variantContext.getStart() + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                            .setPosition(oneBasedStart + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
                     locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
                     locatedVariant.setRef(ref);
                     locatedVariant.setSeq(ref);
                 } else {
                     locatedVariant.setVariantType(sub);
                     locatedVariant
-                            .setPosition(variantContext.getStart() - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                            .setPosition(oneBasedStart - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
                     locatedVariant.setRef(ref);
                     locatedVariant.setSeq(alt);
                     locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
@@ -207,14 +212,14 @@ public class LocatedVariantFactory {
                 if (ref.length() == 0) {
                     locatedVariant.setVariantType(ins);
                     locatedVariant
-                            .setPosition(variantContext.getStart() - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                            .setPosition(oneBasedStart - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
                     locatedVariant.setEndPosition(locatedVariant.getPosition() + 1);
                     locatedVariant.setRef("");
                     locatedVariant.setSeq(alt);
                 } else {
                     locatedVariant.setVariantType(sub);
                     locatedVariant
-                            .setPosition(variantContext.getStart() - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                            .setPosition(oneBasedStart - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
                     locatedVariant.setRef(ref);
                     locatedVariant.setSeq(alt);
                     locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
@@ -224,7 +229,7 @@ public class LocatedVariantFactory {
 
                 locatedVariant.setVariantType(sub);
                 locatedVariant
-                        .setPosition(variantContext.getStart() - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                        .setPosition(oneBasedStart - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
                 locatedVariant.setRef(ref);
                 locatedVariant.setSeq(alt);
                 locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());

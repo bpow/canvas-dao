@@ -21,6 +21,14 @@ public class LocatedVariantFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(LocatedVariantFactory.class);
 
+    private static int sharedPrefixLength(String a, String b) {
+        int maxShared = Math.min(a.length(), b.length());
+        for (int i = 0; i < maxShared; i++) {
+            if (a.charAt(i) != b.charAt(i)) return i;
+        }
+        return maxShared;
+    }
+
     public static LocatedVariant create(GenomeRef genomeRef, GenomeRefSeq genomeRefSeq,
                                         VariantContext variantContext, Allele altAllele,
                                         List<VariantType> allVariantTypes) {
@@ -56,152 +64,34 @@ public class LocatedVariantFactory {
                 return null;
             }
 
-            List<Character> referenceChars = ref.chars().mapToObj(c -> (char) c).collect(Collectors.toList());
-            List<Character> alternateChars = alt.chars().mapToObj(c -> (char) c).collect(Collectors.toList());
+            int prefixLength = sharedPrefixLength(ref, alt);
 
-            StringBuilder frontChars2Remove = new StringBuilder();
-            StringBuilder backChars2Remove = new StringBuilder();
+            String reversedRefWithoutPrefix = new StringBuffer(ref.substring(prefixLength)).reverse().toString();
+            String reversedAltWithoutPrefix = new StringBuffer(ref.substring(prefixLength)).reverse().toString();
 
-            List<Character> charsToRemoveFromRef = new ArrayList<>();
+            int suffixLength = sharedPrefixLength(reversedRefWithoutPrefix, reversedAltWithoutPrefix);
 
-            if (referenceChars.size() == alternateChars.size()) {
-                logger.debug("referenceChars.size() == alternateChars.size(): {}", referenceChars.size() == alternateChars.size());
+            ref = ref.substring(prefixLength, ref.length()-suffixLength);
+            alt = alt.substring(prefixLength, alt.length()-suffixLength);
 
-                for (int i = 0; i < referenceChars.size(); ++i) {
-                    if (referenceChars.get(i) != alternateChars.get(i)) {
-                        break;
-                    }
-                    charsToRemoveFromRef.add(referenceChars.get(i));
-                    frontChars2Remove.append(referenceChars.get(i));
-                }
-
-                for (int i = 0; i < charsToRemoveFromRef.size(); ++i) {
-                    referenceChars.remove(charsToRemoveFromRef.get(i));
-                }
-
-                if (CollectionUtils.isNotEmpty(referenceChars)) {
-                    Collections.reverse(referenceChars);
-                    Collections.reverse(alternateChars);
-                    for (int i = 0; i < referenceChars.size(); ++i) {
-                        if (referenceChars.get(i) != alternateChars.get(i)) {
-                            break;
-                        }
-                        backChars2Remove.append(referenceChars.get(i));
-                    }
-                }
-
-                if (frontChars2Remove.length() > 0) {
-                    ref = ref.replaceFirst(frontChars2Remove.toString(), "");
-                    alt = alt.replaceFirst(frontChars2Remove.toString(), "");
-                }
-
-                if (backChars2Remove.length() > 0) {
-                    backChars2Remove.reverse();
-                    ref = StringUtils.removeEnd(ref, backChars2Remove.toString());
-                    alt = StringUtils.removeEnd(alt, backChars2Remove.toString());
-                }
-
-            } else if (referenceChars.size() > alternateChars.size()) {
-
-                logger.debug("referenceChars.size() > alternateChars.size(): {}", referenceChars.size() > alternateChars.size());
-
-                for (int i = 0; i < referenceChars.size(); ++i) {
-                    if (i == alternateChars.size() || referenceChars.get(i) != alternateChars.get(i)) {
-                        break;
-                    }
-                    frontChars2Remove.append(referenceChars.get(i));
-                }
-
-                if (CollectionUtils.isNotEmpty(referenceChars) && CollectionUtils.isNotEmpty(alternateChars)) {
-
-                    String tmpRef = referenceChars.stream().map(a -> a.toString()).collect(Collectors.joining());
-                    tmpRef = tmpRef.replaceFirst(frontChars2Remove.toString(), "");
-                    referenceChars = tmpRef.chars().mapToObj(c -> (char) c).collect(Collectors.toList());
-
-                    String tmpAlt = alternateChars.stream().map(a -> a.toString()).collect(Collectors.joining());
-                    tmpAlt = tmpAlt.replaceFirst(frontChars2Remove.toString(), "");
-                    alternateChars = tmpAlt.chars().mapToObj(c -> (char) c).collect(Collectors.toList());
-
-                    Collections.reverse(referenceChars);
-                    Collections.reverse(alternateChars);
-                    for (int i = 0; i < referenceChars.size(); ++i) {
-                        if (i == alternateChars.size() || referenceChars.get(i) != alternateChars.get(i)) {
-                            break;
-                        }
-                        backChars2Remove.append(referenceChars.get(i));
-                    }
-                }
-
-                if (frontChars2Remove.length() > 0) {
-                    ref = ref.replaceFirst(frontChars2Remove.toString(), "");
-                    alt = alt.replaceFirst(frontChars2Remove.toString(), "");
-                }
-
-                if (backChars2Remove.length() > 0) {
-                    backChars2Remove.reverse();
-                    ref = StringUtils.removeEnd(ref, backChars2Remove.toString());
-                    alt = StringUtils.removeEnd(alt, backChars2Remove.toString());
-                }
-
-            } else if (referenceChars.size() < alternateChars.size()) {
-
-                logger.debug("referenceChars.size() < alternateChars.size(): {}", referenceChars.size() < alternateChars.size());
-
-                for (int i = 0; i < referenceChars.size(); ++i) {
-                    if (referenceChars.get(i) != alternateChars.get(i)) {
-                        break;
-                    }
-                    charsToRemoveFromRef.add(referenceChars.get(i));
-                    frontChars2Remove.append(referenceChars.get(i));
-                }
-
-                for (int i = 0; i < charsToRemoveFromRef.size(); ++i) {
-                    logger.debug("removing referenceChars: {} at {}", charsToRemoveFromRef.get(i), i);
-                    referenceChars.remove(charsToRemoveFromRef.get(i));
-                }
-
-                if (CollectionUtils.isNotEmpty(referenceChars)) {
-                    Collections.reverse(referenceChars);
-                    Collections.reverse(alternateChars);
-                    for (int i = 0; i < referenceChars.size(); ++i) {
-                        if (referenceChars.get(i) != alternateChars.get(i)) {
-                            break;
-                        }
-                        backChars2Remove.append(referenceChars.get(i));
-                    }
-                }
-
-                if (frontChars2Remove.length() > 0) {
-                    ref = ref.replaceFirst(frontChars2Remove.toString(), "");
-                    alt = alt.replaceFirst(frontChars2Remove.toString(), "");
-                }
-
-                if (backChars2Remove.length() > 0) {
-                    backChars2Remove.reverse();
-                    ref = StringUtils.removeEnd(ref, backChars2Remove.toString());
-                    alt = StringUtils.removeEnd(alt, backChars2Remove.toString());
-                }
-
-            }
+            oneBasedStart = oneBasedStart + prefixLength;
 
             if (ref.length() == 1 && alt.length() == 1) {
 
-                locatedVariant = createSNP(genomeRef, genomeRefSeq, snp, ref, alt,
-                        oneBasedStart + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                locatedVariant = createSNP(genomeRef, genomeRefSeq, snp, ref, alt, oneBasedStart);
 
             } else if (ref.length() > alt.length()) {
 
                 if (alt.length() == 0) {
                     locatedVariant.setVariantType(del);
-                    locatedVariant
-                            .setPosition(oneBasedStart + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                    locatedVariant.setPosition(oneBasedStart);
+                    // FIXME - check that this is right for end position
                     locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
                     locatedVariant.setRef(ref);
                     locatedVariant.setSeq(ref);
                 } else {
                     locatedVariant.setVariantType(sub);
-                    locatedVariant
-                            .setPosition(oneBasedStart - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                    locatedVariant.setPosition(oneBasedStart - 1);
                     locatedVariant.setRef(ref);
                     locatedVariant.setSeq(alt);
                     locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
@@ -211,15 +101,13 @@ public class LocatedVariantFactory {
 
                 if (ref.length() == 0) {
                     locatedVariant.setVariantType(ins);
-                    locatedVariant
-                            .setPosition(oneBasedStart - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                    locatedVariant.setPosition(oneBasedStart-1);
                     locatedVariant.setEndPosition(locatedVariant.getPosition() + 1);
                     locatedVariant.setRef("");
                     locatedVariant.setSeq(alt);
                 } else {
                     locatedVariant.setVariantType(sub);
-                    locatedVariant
-                            .setPosition(oneBasedStart - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                    locatedVariant.setPosition(oneBasedStart-1);
                     locatedVariant.setRef(ref);
                     locatedVariant.setSeq(alt);
                     locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());
@@ -228,8 +116,7 @@ public class LocatedVariantFactory {
             } else if (ref.length() == alt.length()) {
 
                 locatedVariant.setVariantType(sub);
-                locatedVariant
-                        .setPosition(oneBasedStart - 1 + (frontChars2Remove.length() > 0 ? frontChars2Remove.length() : 0));
+                locatedVariant.setPosition((oneBasedStart-1));
                 locatedVariant.setRef(ref);
                 locatedVariant.setSeq(alt);
                 locatedVariant.setEndPosition(locatedVariant.getPosition() + ref.length());

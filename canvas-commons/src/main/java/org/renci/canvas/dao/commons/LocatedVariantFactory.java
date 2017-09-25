@@ -53,6 +53,7 @@ public class LocatedVariantFactory {
         VariantType del = allVariantTypes.stream().filter(a -> a.getId().equals("del")).findAny().get();
         VariantType ins = allVariantTypes.stream().filter(a -> a.getId().equals("ins")).findAny().get();
         VariantType sub = allVariantTypes.stream().filter(a -> a.getId().equals("sub")).findAny().get();
+        VariantType reference = allVariantTypes.stream().filter(a -> a.getId().equals("ref")).findAny().get();
 
         try {
 
@@ -66,9 +67,14 @@ public class LocatedVariantFactory {
                 return null;
             }
 
-            if (ref.equals(alt)) {
-                logger.error("ref and alt are equal");
-                return null;
+            if (ref.equals(alt)) { // short-circuit path for reference alleles
+                locatedVariant.setVariantType(reference);
+                locatedVariant.setPosition(oneBasedStart);
+                locatedVariant.setEndPosition(oneBasedStart+1);
+                // FIXME- technically, could include fact that allele is reference at multiple adjacent sites
+                locatedVariant.setRef(ref.substring(0, 1));
+                locatedVariant.setSeq(ref.substring(0, 1));
+                return locatedVariant;
             }
 
             int prefixLength = sharedPrefixLength(ref, alt);
